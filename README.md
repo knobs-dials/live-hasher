@@ -7,11 +7,12 @@ but skips files that haven't changed mtime or size.
 
 Stops after the directory it watches has been idle for some time (defauly 6 hours)
 
-
 The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
 
+
+### Limitations
                                                                                                                
-The caveat is that when you stop and re-run, it can't really do a size or mtime check,
+The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
 because the hashfile, our primary information store, doesn't contain these.
 
 There's a "re-hash files with mtime younger than X" argument to help there, 
@@ -19,7 +20,7 @@ but it makes the assumption that older files never change (and that mtime means 
 so be sure that makes sense for you.
 
 
-Notes:
+### Notes:
 - code can read/check MD5 or SHA1. Writing is currently only SHA1
 
 - checker code is basically just equivalent to md5sum -c / sha1sum -c
