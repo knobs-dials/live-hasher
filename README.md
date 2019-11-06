@@ -3,17 +3,20 @@
 Hashfile checker, hashfile maker.
 
 The addition is a mode that keeps watching the given directory (listdirs with 1-minute interval),
-and rehashes files that change mtime and/or size.
-The point is dealing sensibly with datasets while being collected, files while being copied in, and such.
+but skips files that haven't changed mtime or size.
 
 Stops after the directory it watches has been idle for some time (defauly 6 hours)
 
+
+The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
+
                                                                                                                
 The caveat is that when you stop and re-run, it can't really do a size or mtime check,
-because the hashfile, as as our primary information, doesn't contain these.
+because the hashfile, our primary information store, doesn't contain these.
 
 There's a "re-hash files with mtime younger than X" argument to help there, 
-but it makes the assumption that older files do not change so be sure that makes sense for you.
+but it makes the assumption that older files never change (and that mtime means local age, e.g. not true in rsync)
+so be sure that makes sense for you.
 
 
 Notes:
