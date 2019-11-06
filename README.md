@@ -2,7 +2,7 @@
 
 Hashfile checker, hashfile maker.
 
-The addition is a mode that keeps watching the given directory (listdirs with 1-minute interval),
+The addition is a mode that keeps watching the given directory (recursive listdirs, 1-minute interval),
 but skips files that haven't changed mtime or size.
 
 Stops after the directory it watches has been idle for some time (defauly 6 hours)
