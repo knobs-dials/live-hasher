@@ -1,0 +1,671 @@
+#!/usr/bin/python3
+import os
+import sys
+import re
+import time
+import errno
+import hashlib
+import datetime
+import shutil
+import threading
+import tempfile
+
+
+def parse_hms(v):
+    ''' string interval spec to seconds, e.g.  
+         '1h30m' -> 5400, 
+         '1 day, 30 min, 4 sec' -> 88204
+        Naive implementation, just looks for words starting with w,d,h,m,s
+        and assumes m is minutes, not months
+    '''
+    ret_sec = 0
+    things = re.findall(r'([0-9.]+)\s*([a-z]+)[,;\s-]*', v.lower())
+    if len(things)==0:
+        try:
+            ret_sec = float(v) # see if it's unitless, interpret as seconds
+        except:
+            raise ValueError("don't understand value %r"%unit)
+    for num,unit in things:
+        #print num,unit
+        n = float(num)
+        if unit[0]=='w':
+            n *= 60*60*24*7
+        elif unit[0]=='d':
+            n *= 60*60*24
+        elif unit[0]=='h':
+            n *= 60*60
+        elif unit[0]=='m':
+            n *= 60
+        elif unit[0]=='s':
+            pass
+        else:
+            raise ValueError("don't understand time unit %r"%unit)
+        ret_sec += n
+    return ret_sec
+
+def parse_kmg(s, kilo=1000, listen_to_i=False):
+    """ '1k'         --> 1024
+        '2 MB'       --> 2097152
+        '1.51Gflops' --> 1621350154
+        Defaults to binary thousands.
+        Looks for kmgtp.
+        Ignores anything not [0-9kmgtp]
+
+        quick and dirty implementation, may need work.
+
+        Kilo defailts to decimal kilos.
+        If you want binary kilos, specify it, or set listen_to_i=True
+        (for things like 4.5KiB).
+        This is false by defauly because you ought to
+        know the amount of preformatting you need to do
+    """
+    if listen_to_i and 'i' in s:
+        kilo=1024
+
+    mega=kilo*kilo
+    giga=mega*kilo
+    tera=giga*kilo
+    peta=tera*kilo
+
+    ns=re.sub(r'[A-Za-z]','',s) #s.rstrip('kmgtpKMGTPiIbB') # or just everything?
+    if ns.count(',')==1: # pseudo-relocalization.
+        ns=ns.replace(',','.') # e.g. for dutch people.
+    try:
+        ret=float(ns)
+        sl=s.lower()
+        # TODO: test whether it's right after the number, to avoid words with these letters messing things up.
+        if 'k' in sl:
+            ret *= kilo
+        elif 'm' in sl:
+            ret *= mega
+        elif 'g' in sl:
+            ret *= giga
+        elif 't' in sl:
+            ret *= tera
+        elif 'p' in sl:
+            ret *= peta
+        ret=int(ret)
+        return ret
+
+    except Exception as e:
+        print("Didn't understand value %r"%ns)
+        print(e)
+        raise
+
+    
+def showtime(sec, longform=False, parts=2):
+    """ Shows a relative amount of time (seconds as float/int, or a timedelta) in a human-sensible summary
+    """
+    if type(sec) is datetime.timedelta:
+       sec = sec.days*86400 + sec.seconds
+
+    vals = [
+        ('month',  'months',   'mo',   60.*60.*24.*30.6      ),
+        ('week',   'weeks',    'wk',   60.*60.*24.*7         ),
+        ('day',    'days',     'dy',   60.*60.*24.           ),
+        ('hour',   'hours',    'hr',   60.*60.               ),
+        ('minute', 'minutes',  'min',  60.                   ),
+    ]
+    ret=[]
+    left = sec
+    roundme=False
+    if left > 10:
+        roundme=True
+
+    for one,many,shorts,insec in vals:
+        if left>insec:
+            howmany = int(left/insec)
+            left -= howmany*insec
+            if longform:
+                if howmany==1:
+                    ret.append( '1 %s'%(one) )
+                else:
+                    ret.append( '%d %s'%(howmany,many) )
+            else: # short form
+                ret.append('%2d%-3s'%(howmany,shorts))
+    if left>0.:
+        if left<0.5: # rather short time?
+            if longform:
+                ret.append( '%d milliseconds'%(1000.*left) )
+            else:
+                ret.append( '%d ms'%(1000.*left) )
+        else: # more than half a second, show as seconds
+            if roundme:
+                if longform:
+                    ret.append( '%d seconds'%(left) )
+                else:
+                    ret.append( '%dsec'%(left) )
+            else:
+                if longform:
+                    ret.append( '%.1f seconds'%(left) )
+                else:
+                    ret.append( '%.2fsec'%(left) )
+    
+    return (', '.join(ret[:2])).strip()
+
+
+
+
+
+def md5sum(filename, block_size=512*1024):
+    ' calculate MD5 hash of a file (read in blocks). Returned as hex. '
+    m5h = hashlib.md5()
+    f = open(filename, 'rb')
+    try:
+        while True:
+            d = f.read(block_size)
+            if len(d)==0: # EOF
+                break
+            m5h.update(d)
+    finally:
+        f.close()
+    return m5h.hexdigest()
+
+
+def sha1sum(filename, block_size=512*1024):
+    ' calculate SHA1 hash of a file (read in blocks). Returned as hex. '
+    s1h = hashlib.sha1()
+    f = open(filename, 'rb')
+    try:
+        while True:
+            d = f.read(block_size)
+            if len(d)==0: # EOF
+                break
+            s1h.update(d)
+    finally:
+        f.close()
+    return s1h.hexdigest()
+
+#def sha1md5sum(filename, block_size=512*1024):
+#    ''' Calculate both SHA1 and MD5 at the same time (for when you need both,
+#        and on huge files so you can't rely on the page cache)
+#        returns (sha1hex, md5hex)
+#    '''
+#    m5h = hashlib.md5()
+#    s1h = hashlib.sha1()
+#    f = open(filename, 'rb')
+#    try:
+#        while True:
+#            d = f.read(block_size)
+#            if len(d)==0: # EOF
+#                break
+#            m5h.update(d)
+#            s1h.update(d)
+#    finally:
+#        f.close()
+#    return (s1h.hexdigest(),m5h.hexdigest())
+
+
+
+
+def read_hashfile(filename, raise_if_missing=False):
+    """ Read a "hash of a bunch of files" file
+
+        If the file doesn't exist, 
+              and raise_if_missing=False (default), it returns {}.
+                                if True        raises an OSError
+
+        Returns dict from relative filename to hex hash.
+        (You get to guess what hash by length)
+
+        Accepts the following two conventions:
+        - GNU md5sum
+          "hash  filename"   indicating text mode
+          "hash *filename"   indicating binary mode.  We ignore the binary-mode indicator
+        - BSD md5sum
+          "MD5 (filename) = hash"
+
+        Ignores lines not following this. CONSIDER: allowing error raise instead
+    """
+    ret = {}
+    if not os.path.exists(filename):
+        if raise_if_missing:
+            raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+        else:
+            return ret
+    else:
+        f = open(filename)
+
+        try:
+            for line in f:
+                line = line.rstrip()
+
+                filename = None
+                hashval  = None
+
+                # BSD style
+                be = line.rfind(') = ')
+                bs = line.find('(')
+                # GNU style
+                sa = line.rfind(' *')
+                ss = line.rfind('  ')
+
+                # BSD style
+                if be != -1 and bs != -1:
+                    filename = line[bs+1:be]
+                    hashval  = line[be+4:]
+                # GNU style
+                if sa != -1 or ss != -1:
+                    if sa != -1 and ss != -1: # which is weird but could happen with weird filenames?
+                        ms = max(sa,ss)
+                        hashval  = line[:ms]
+                        filename = line[ms+2:]
+                    elif ss != -1:
+                        hashval  = line[:ss]
+                        filename = line[ss+2:]
+                    elif sa != -1:
+                        hashval  = line[:sa]
+                        filename = line[sa+2:]
+                
+                if filename==None or hashval== None:
+                    print("read_hashfile ignored line %r"%line)
+                else:
+                    #print "read_hashfile parsed line %r as (%r,%r)"%(line, filename, hashval)
+                    ret[filename] = hashval
+        finally:
+            f.close
+    return ret
+
+
+def write_hashfile(hash_filename, hashes):
+    """ Writes (GNU style) hash file.
+
+        Writes a new file alongside, moves it over the original, 
+        to lower the chance of a misplased Ctrl-C undoing a lot of IO work.
+        TODO: think about leftover bordercases.
+
+        CONSIDER: writing to /tmp first instead (other watching tools might act on the temporary file)
+    """
+    hash_abspath = os.path.abspath(hash_filename)
+    indir = os.path.dirname( hash_abspath )
+
+    tmp_handle, tmp_path = tempfile.mkstemp(prefix='newhashfile', dir=indir)
+    os.close(tmp_handle) # open file handle is sorta secure, but that's not really our goal here
+    f = open(tmp_path,'wb')
+    try:
+        for filename in sorted(hashes):
+            hashval = hashes[filename]
+            line = '%s *%s'%(hashval,  filename)
+            f.write( (line+'\n').encode('u8') )
+    except Exception as e:
+        print("Exception writing hash file")
+        raise
+    finally:
+        f.close()
+        print("rename %r to %r"%(tmp_path, hash_abspath))
+        #os.rename(tmp_path, hash_abspath) # windows goes BLEH (183)
+        shutil.move(tmp_path, hash_abspath)
+ 
+
+
+def checker(hashfile, lookunder, verbose=False):
+    """ Given a hash-summary file and a directory,
+        sees if all listed files check out.
+
+        TODO: report files that were not listed
+    """
+    lookunder = os.path.abspath(lookunder)
+    hashes = read_hashfile(hashfile)
+
+    if verbose:
+        print("# Read %d entries from hash file"%len(hashes))
+    changed_data = False
+    ok        = {}
+    failed    = {}
+    extra     = {} # on disk, not listed in checksum file
+
+    looked_at = {} # filenames
+    
+
+    lastflush = time.time()
+
+    for r, ds, fs in os.walk( lookunder ):
+        for fn in fs:
+            ffn = os.path.join(r, fn)
+            relfn = ffn[len(lookunder):].lstrip('/')            
+            sys.stdout.write('.')
+            now = time.time()
+            if now-lastflush>0.2:
+                sys.stdout.flush()
+                lastflush = now
+
+            relfn = ffn[len(lookunder):].lstrip('/')
+            looked_at[relfn] = True
+
+            if relfn in hashes:
+                listedhash = hashes[relfn]
+
+                if len(listedhash)==32:  # assume MD5sum
+                    filehash = md5sum(ffn)
+                elif len(listedhash)==40:  # assume SHA1sum
+                    filehash = sha1sum(ffn)
+                else:
+                    raise ValueError("Don't know what hash %r could be"%listedhash)
+
+                if listedhash == filehash:
+                    ok[relfn] = filehash
+                    #print("OK: %r"%relfn)
+                else:
+                    failed[relfn] = (filehash,listedhash)
+                    #print("FAIL: %r"%relfn)
+            else:
+                extra[relfn] = True
+
+    missing = set(hashes.keys()).difference(looked_at)
+
+    print('') 
+    print("%5d OK"%len(ok))
+    print("%5d MISSING  (in checksum file, not on disk)"%len(missing))
+    print("%5d FAILED"%len(failed))
+    print("%5d EXTRA    (on disk, not in checksum file)"%( len(extra ) ))
+    for fn in missing:
+        print('MISSING: %r'%fn) 
+    for fn in extra:
+        print("EXTRA: %r"%fn)
+    for fn in failed:
+        print('FAILED %r  %s != %s'%(fn, failed[fn][0],failed[fn][1]))
+
+
+def updater(hashfile, lookunder, redo_recent_sec=0, skipfiles_ffn=[], 
+            save_every_n=500, save_every_bytes=1000000000,
+            verbose=False):
+    """ given a path to a hash file, and a directory to look under, will add entries to it.
+
+        Entry paths are relative to lookunder  (after it is made absolute path)
+
+        While running this can watch mtime and size, but not between runs.
+        If you want safety for files you think may be updated, hand redo_recent_sec a number of seconds.
+        If a file is younger than this, it will be recalculated.
+
+        save_every_n   (file count, default 100) 
+        save_every_bytes           (default 1GB)
+           save the hash file every now and then,
+           to allow Ctrl-C without losing much work
+    """
+    global stat_memory
+    lookunder = os.path.abspath(lookunder)
+
+    hashes = read_hashfile(hashfile) # read it every round, in case you did a thing to it.
+    print("# Read %d entries from hash file"%len(hashes))
+    
+    lookunder_parent = os.path.dirname(lookunder)
+    
+    changed_hashdata = False
+    count_unsaved = 0
+    bytes_unsaved = 0
+
+    count_added   = 0
+    count_same    = 0
+    count_redone  = 0
+    
+    now = time.time()
+
+    for r, ds, fs in os.walk( lookunder ):
+        for fn in fs:
+
+            crossed_count = (count_unsaved >= save_every_n)
+            crossed_bytes = (bytes_unsaved >= save_every_bytes)
+            if (crossed_count or crossed_bytes):
+                if crossed_count:
+                    print("# Intermediate save because of %d new files"%count_unsaved)
+                else:
+                    print("# Intermediate save because of %dMB new data read"%( float(bytes_unsaved)/1000000.))
+                    
+                write_hashfile(hashfile, hashes)
+                count_unsaved = 0
+                bytes_unsaved = 0
+
+            ffn = os.path.join(r, fn)
+            
+            if ffn in skipfiles_ffn:
+                if verbose:
+                    print("SKIP file (by request): %r"%ffn)
+                continue
+
+            mode, inode, device, numhardlinks, uid,gid, size, atime, mtime, ctime = os.lstat(ffn)
+
+            relfn = ffn[len(lookunder):].lstrip( os.sep )
+
+            try:
+                # if lstat is okay, and stat is not, then it's very likely a broken symlink
+                os.stat(ffn)
+            except OSError as e:
+                if e.errno==2:
+                    print("SKIP broken symlink %r"%relfn)
+                continue
+
+            if relfn not in hashes:
+                print("NEW file:       %r"%relfn)
+                s1h = sha1sum( ffn ) # CONSIDER also supporting MD5. And possibly writing both files.
+                hashes[relfn] = s1h
+                changed_hashdata = True
+                stat_memory[ffn] = (mtime, size)
+                count_added   += 1
+                count_unsaved += 1
+                bytes_unsaved += size
+                continue
+
+            file_age = now-mtime
+            #print (file_age, repr(redo_recent_sec), file_age < redo_recent_sec )
+            if file_age < redo_recent_sec:
+                print("RECENT file, REHASHING: %r"%relfn)
+                s1h = sha1sum( ffn ) # CONSIDER also supporting MD5. And possibly writing both files.
+                #print(relfn in hashes)
+                #print(hashes[relfn], s1h)
+                #print(hashes[relfn]==s1h)
+                if relfn in hashes and hashes[relfn] == s1h: 
+                    changed_hashdata = False
+                else: # if it's the same hash as before, don't consider it changed
+                    changed_hashdata = True
+                hashes[relfn] = s1h
+                stat_memory[ffn] = (mtime, size)
+                count_redone  += 1
+                count_unsaved += 1
+                bytes_unsaved += size
+                continue
+
+            if ffn in stat_memory:
+                different_size  = (stat_memory[ffn][0] != mtime)
+                different_mtime = (stat_memory[ffn][1] != size)
+                if different_size or different_mtime:
+                    how = []
+                    if different_size:
+                        how.append('size')
+                    if different_mtime:
+                        how.append('mtime')
+                    print("CHANGED  %s: %r"%(' and '.join(how),  relfn))
+                    s1h = sha1sum( ffn ) # CONSIDER also supporting MD5. And possibly writing both files.
+                    hashes[relfn] = s1h
+                    changed_hashdata = True
+                    stat_memory[ffn] = (mtime, size)
+                    count_redone  += 1
+                    count_unsaved += 1
+                    bytes_unsaved += size
+                    continue
+
+            count_same +=1    
+
+            #print("EXISTS/UNCHANGED: %s"%relfn)
+
+            
+    # CONSIDER: keeping previous state and doing a direct comparison, rather than counting on above logic
+    if changed_hashdata:
+        print("# Altered hash data, saving to hashfile")
+        write_hashfile(hashfile, hashes)
+    else:
+        print("# No change in hash data")
+
+    return count_added, count_same, count_redone
+
+
+
+
+
+if __name__ == '__main__':
+    # We currently 
+    # - check MD5 or SHA1 depending on what we find in the checksum file
+    # - generate SHA1
+    stat_memory = {}
+
+    try:
+        import setproctitle
+        setproctitle.setproctitle(os.path.basename(sys.argv[0]))
+    except ImportError:
+        pass
+    
+    from optparse import OptionParser
+    p = OptionParser()
+
+    p.add_option("-a", "--add-once",       dest="addnew",       default=None, action="store_true",
+                 help="One-shot add of files exist on disk but not in the hash file")
+
+    p.add_option("-w", "--watch",          dest="watch",        default=None, action="store_true",
+                 help="Add, then keep watching for new/changed files  (by mtime or size changes)")
+
+    p.add_option("-c", "--check",          dest="check",        default=None, action="store_true",
+                 help="Check existing entries against disk contents (like md5sum -c / sha1sum -c), relative to the given dir")
+
+    p.add_option("-o", "--output-filepath", dest="hashfile",    default=None, action="store",
+                 help="Write hashfile to this specific filename, rather than to hashes.sha1 placed in the directory it's reading from.")
+
+    p.add_option("-i", "--watch-interval", dest="interval",     default="60sec", action="store",
+                 help="when using -w: the sleep time between rounds. Defaults to 1 minute.")
+
+    p.add_option("-e", "--watch-timespan", dest="timespan",     default="6 hours", action="store",
+                 help="when using -w: time after the last observed to quit. Accepts timespecs like accepts 10min and 1h30s. Defaults to 6 hours.")
+
+
+    p.add_option("-r", "--redo-recent",    dest="redo_recency", default='5min', action="store",
+                 help="When using -w (first round only), or -a: Files younger than this timespec are rehashed. Safer when you break and re-run one of these watching processes. Defaults to 5min.")
+
+    p.add_option("-C", "--save-interval",       dest="save_every_n",      default="500", action="store", type=int,
+                 help="Save every so-many files hashed (default:500)")
+    p.add_option("-B", "--save-interval-bytes", dest="save_every_bytes",     default="1G", action="store", 
+                 help="Save every so-many megabytes hashed (default: 1GB)")
+
+    p.add_option("-v", "--verbose", dest="verbose",     default=False, action="store_true",
+                 help="print more debug")
+
+
+    options, args = p.parse_args()
+
+    scriptname = os.path.basename( sys.argv[0] )
+    def print_usage(prependline=''):
+        print('\n'.join([
+          prependline,
+          "",
+          "Specify one of -w, -a, or -c, and a directory to read files from:",
+          "",
+          "  %s <-a|-w|-c> dirname/"%scriptname,
+          "",
+          "",
+        ]))
+        p.print_help()
+        print('') 
+
+    ## Input sanitizing and errors and whatnot ## 
+    timespan         = parse_hms(options.timespan)
+    recency          = parse_hms(options.redo_recency)
+    interval         = parse_hms(options.interval)    
+    save_every_n     = int(options.save_every_n)
+    save_every_bytes = parse_kmg(options.save_every_bytes)
+
+    if not options.check and not options.addnew and not options.watch:
+        print_usage()
+        sys.exit(0)
+
+    lookunder=[]
+
+    if len(args)==0:
+        print("Defaulting directory to working directory, %r"%lookunder)
+        lookunder.append( os.path.abspath('.') )
+    else:
+        for arg in args:
+            absarg = os.path.abspath( arg )
+            if not os.path.exists( absarg ):
+                print("SKIP, argument directory %r does not exist"%absarg)
+                continue
+            elif not os.path.isdir( absarg ):
+                print("SKIP, argument %r is not directory"%absarg)
+                continue
+            lookunder.append( absarg )
+
+    
+    hashfile  = options.hashfile
+    if options.hashfile == None:
+        hashfile = "hashes.sha1" # default name if none given
+
+    if os.sep in hashfile and len(args)>1:
+        print("Specifing a relative/absolute path (rather than just basename) for the hash file is only valid when specifying a single directory to work on.")
+        sys.exit(-1)
+
+        
+    if options.verbose:
+        print("HASHFILE:  %r"%hashfile)
+        print("LOOKUNDER: %r"%lookunder)
+        print("TIMESPAN:  %s (%s)"%(showtime(timespan),timespan))
+        print("RECENCY:   %s (%s)"%(showtime(recency),recency))
+        print("INTERVAL:  %s (%s)"%(showtime(interval),interval))
+
+
+    def threadfunc(absdir, thname):
+        started_at  = time.time()
+        last_change = time.time()
+        thname = '[%20s] '%thname
+
+        th_hashfile = os.path.join(absdir, hashfile)
+
+        if options.check:
+            if not os.path.exists(th_hashfile):
+                print(thname+"Asked to check against hash file that does not (yet?) exist: %r"%th_hashfile)
+            else:
+                #lookunder = lookunder[0] # TODO: figure out how dir arguments should work for the checker 
+                print(thname+"Checking contents under %r against hashes in %r"%(lookunder, th_hashfile))
+                checker(th_hashfile, lookunder[0], verbose=options.verbose)
+
+        if options.addnew or options.watch: # 
+            if recency>0:
+                print(thname+"# Will add new files, and rehash files younger than %d seconds"%recency)
+            else:
+                print(thname+"# Will add new files")
+
+            count_added, count_same, count_redone = updater(th_hashfile, absdir, redo_recent_sec=recency, 
+                                                            save_every_n=save_every_n, save_every_bytes=save_every_bytes,
+                                                            skipfiles_ffn=[th_hashfile], verbose=options.verbose)
+            print(thname+"# added:%d  skipped:%d   rehashed:%d"%(count_added, count_same, count_redone))
+
+        if options.watch:
+            print(thname+"# Will keep watching for at most %s idle time"%showtime(timespan))
+            while True:
+                print(thname+"# sleeping %s"%(showtime( interval )))
+                time.sleep( interval )
+                print('')
+                print(thname+" === Running watch loop === ")
+                count_added, count_same, count_redone = updater(th_hashfile, absdir, redo_recent_sec=0, 
+                                                                save_every_n=save_every_n, save_every_bytes=save_every_bytes,
+                                                                skipfiles_ffn=[th_hashfile], verbose=options.verbose)
+                if count_added+count_redone>0:
+                    last_change = time.time()
+                print(thname+"added:%d  skipped:%d   rehashed:%d"%(count_added, count_same, count_redone))
+
+                since_last_change = time.time()-last_change
+                if options.verbose:
+                    print(thname+"Time since last change: %s"%showtime(since_last_change))
+                if since_last_change > timespan:
+                    print(thname+"Watching timespan is up (after %s), exiting."%(showtime(time.time()-started_at) ))
+                    break
+
+        print(thname+"Done after %s "%showtime(time.time()-started_at))
+
+        
+    fired_threads = []
+    for absdir in lookunder:
+        f = threading.Thread(target=threadfunc, args=(absdir,os.path.basename(absdir)))
+        f.start()
+        fired_threads.append(f)
+
+    for th in fired_threads: # just wait for each in turn.
+        th.join()
+
+
+

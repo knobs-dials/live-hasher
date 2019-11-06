@@ -2,7 +2,7 @@
 
 Hashfile checker, hashfile maker.
 
-The addition is a mode that keeps watching the given directory (recursive listdirs, 1-minute interval),
+The main addition is a mode that keeps watching the given directory (recursive listdirs, 1-minute interval),
 but skips files that haven't changed mtime or size.
 
 Stops after the directory it watches has been idle for some time (defauly 6 hours)
@@ -10,13 +10,17 @@ Stops after the directory it watches has been idle for some time (defauly 6 hour
 The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
 
 
+Also runs a thread per directory argument, which can help wallclock speed when they are on different disks.
+
+
 ### Limitations
                                                                                                                
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
 because the hashfile, our primary information store, doesn't contain these.
 
-There's a "re-hash files with mtime younger than X" argument to help there, 
-but it makes the assumption that older files never change (and that mtime means local age, e.g. not true in rsync)
+There's a "re-hash files with mtime younger than X" argument (default 5min) to help there, 
+but it makes the assumption that older files never change,
+and that mtime means local age (e.g. not true in rsync).
 so be sure that makes sense for you.
 
 
@@ -31,4 +35,4 @@ so be sure that makes sense for you.
 
 - prints/stores relative paths  (internally it's absolute)
 
-- not thoroughly tested, don't rely on it for your dog's / company's safety
+- First-ish version, not thoroughly tested, don't rely on it for your dog's / company's safety
