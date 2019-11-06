@@ -31,3 +31,4 @@ so be sure that makes sense for you.
 
 - prints/stores relative paths  (internally it's absolute)
 
+- not thoroughly tested, don't rely on it for your dog's / company's safety
