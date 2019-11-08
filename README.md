@@ -1,6 +1,6 @@
 # live-hasher
 
-Hashfile checker, hashfile maker.
+Hashfile maker and checker.
 
 The main addition is a mode that keeps watching the directories, recalculates hashes for files that change mtime or size, and stops watching after a time.
 
