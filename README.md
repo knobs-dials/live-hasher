@@ -2,11 +2,11 @@
 
 Hashfile maker and checker.
 
-The main addition is a mode that keeps watching the directories, recalculates hashes for files that change mtime or size, and stops watching after a time.
-
-One thread per directory argument, which can help speed when they are on different disks/servers.
+The main addition is a mode that keeps watching the directories for changed (by size/mtime) and added files, and stops watching the directory after a time.
 
 The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
+
+One thread per directory argument, which can help speed when they are on different disks/servers.
 
 
 ### Limitations
