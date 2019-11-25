@@ -25,7 +25,7 @@ so be sure that makes sense for your use.
 - checker code is basically just equivalent to md5sum -c / sha1sum -c
 
 - tries to avoid losing work with an ill-placed Ctrl-C:
--- new hashfile is saved to a temporary file, them moved (makes losing the hash file due to interruption less likely)
+-- new hashfile is saved to a temporary file, then moved into place
 -- hashfile is written every-so-many files (default 500) and every-so-many bytes bytes (default 1GB)
 
 - prints/stores relative paths  (internally it's absolute)
