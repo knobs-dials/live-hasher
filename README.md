@@ -6,7 +6,7 @@ The use cases this was for is dealing sensibly with datasets while being collect
 
 Also stops watching the directory after a time.
 
-One thread per directory argument, which can help speed when they are on different disks/servers.
+One thread per directory argument, which can help speed when they are on different mounts.
 
 
 ### Limitations
