@@ -20,14 +20,14 @@ so be sure that makes sense for your use.
 
 
 ### Notes:
-- code can read/check MD5 or SHA1. Writing is currently only SHA1
+* code can read/check MD5 or SHA1. Writing is currently only SHA1
 
-- checker code is basically just equivalent to md5sum -c / sha1sum -c
+* checker code is basically just equivalent to md5sum -c / sha1sum -c
 
-- tries to avoid losing work with an ill-placed Ctrl-C:
--- new hashfile is saved to a temporary file, then moved into place
--- hashfile is written every-so-many files (default 500) and every-so-many bytes bytes (default 1GB)
+* tries to avoid losing work with an ill-placed Ctrl-C:
+  * new hashfile is saved to a temporary file, then moved into place
+  * hashfile is written every-so-many files (default 500) and every-so-many bytes bytes (default 1GB)
 
-- prints/stores relative paths  (internally it's absolute)
+* prints/stores relative paths  (internally it's absolute)
 
-- First-ish version, not thoroughly tested, don't rely on it for your dog's / company's safety
+* First-ish version, not thoroughly tested, don't rely on it for your dog's / company's safety
