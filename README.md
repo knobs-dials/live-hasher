@@ -1,10 +1,10 @@
 # live-hasher
 
-Hashfile maker and checker.
-
-The main addition is a mode that keeps watching the directories for changed (by size/mtime) and added files, and stops watching the directory after a time.
-
+Hashfile maker that can keep watching the directories for changed added and changes files (by size/mtime). 
 The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
+
+
+Also stops watching the directory after a time.
 
 One thread per directory argument, which can help speed when they are on different disks/servers.
 
