@@ -1,25 +1,25 @@
 # live-hasher
 
-Hashfile maker that can keep watching the directories for changed added and changes files (by size/mtime). 
-The use cases this was for is dealing sensibly with datasets while being collected, files while being copied in, and such.
+Hashfile maker for directories, that can keep watching the directories for changed added and changes files (by size/mtime). 
 
+The use case this was for is dealing sensibly with dataset files being copied in during data collection, in that these files might be appended to or otherwise change content.
 
 Also stops watching the directory after a time.
-
-One thread per directory argument, which can help speed when they are on different mounts.
 
 
 ### Limitations
                                                                                                                
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
-because the hashfile, our only information store, doesn't contain these.
+because the hashfile (our only information store between runs) doesn't contain these.
 
 There's a "re-hash files with mtime younger than X" argument (default 5min) to help there, 
 but it makes the assumption that older files never change, and that mtime means local age (e.g. not true in rsync).
-so be sure that makes sense for your use.
+so you should be sure that makes sense for your use.
 
 
 ### Notes:
+* One thread per directory argument, which can help speed when they are on different mounts.
+
 * code can read/check MD5 or SHA1. Writing is currently only SHA1
 
 * checker code is basically just equivalent to md5sum -c / sha1sum -c
