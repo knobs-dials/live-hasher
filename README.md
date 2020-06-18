@@ -16,6 +16,47 @@ There's a "re-hash files with mtime younger than X" argument (default 5min) to h
 but it makes the assumption that older files never change, and that mtime means local age (e.g. not true in rsync).
 so you should be sure that makes sense for your use.
 
+### Arguments:
+
+```
+Specify one of -w, -a, or -c, and a directory to read files from:
+
+  live-hasher <-a|-w|-c> dirname/
+
+
+Usage: live-hasher [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -a, --add-once        One-shot add of files exist on disk but not in the
+                        hash file
+  -w, --watch           Add, then keep watching for new/changed files  (by
+                        mtime or size changes)
+  -c, --check           Check existing entries against disk contents (like
+                        md5sum -c / sha1sum -c), relative to the given dir
+  -o HASHFILE, --output-filepath=HASHFILE
+                        Write hashfile to this specific filename, rather than
+                        to hashes.sha1 placed in the directory it's reading
+                        from.
+  -i INTERVAL, --watch-interval=INTERVAL
+                        when using -w: the sleep time between rounds. Defaults
+                        to 1 minute.
+  -e TIMESPAN, --watch-timespan=TIMESPAN
+                        when using -w: time after the last observed to quit.
+                        Accepts timespecs like accepts 10min and 1h30s.
+                        Defaults to 6 hours.
+  -r REDO_RECENCY, --redo-recent=REDO_RECENCY
+                        When using -w (first round only), or -a: Files younger
+                        than this timespec are rehashed. Safer when you break
+                        and re-run one of these watching processes. Defaults
+                        to 5min.
+  -C SAVE_EVERY_N, --save-interval=SAVE_EVERY_N
+                        Save every so-many files hashed (default:500)
+  -B SAVE_EVERY_BYTES, --save-interval-bytes=SAVE_EVERY_BYTES
+                        Save every so-many megabytes hashed (default: 1GB)
+  -v, --verbose         print more debug
+```
+
 
 ### Notes:
 * tries to avoid losing work with an ill-placed Ctrl-C:
