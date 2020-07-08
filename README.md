@@ -1,6 +1,6 @@
 # live-hasher
 
-Hashfile maker for directories, that can keep watching the directories, and rehash any added and altered files (by size/mtime). 
+Hashfile maker for directories, that can keep watching the directories, and rehash new files and altered files (detected by changes in size and/or mtime). 
 
 Also stops watching the directory after a time.
 
