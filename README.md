@@ -1,6 +1,6 @@
 # live-hasher
 
-Hashfile maker for directories, that can keep watching the directories, and rehash new files and altered files (detected by changes in size and/or mtime). 
+SHA1 hashfile maker for directories, that can keep watching the directories, and rehash new files and altered files (detected by changes in size and/or mtime). 
 
 Also stops watching the directory after a time.
 
@@ -62,8 +62,6 @@ Options:
 
 
 ### Notes:
-* we can read/check MD5 or SHA1.  We currently only write SHA1
-
 * One thread per directory argument, which can help speed when they are on different mounts.
 
 * checker code is basically just equivalent to md5sum -c / sha1sum -c
