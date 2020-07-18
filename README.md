@@ -1,10 +1,12 @@
 # live-hasher
 
-SHA1 hashfile maker for directories, that can keep watching the directories, and rehash new files and altered files (detected by changes in size and/or mtime). 
+SHA1 hashfile maker for directories.
 
-Also stops watching the directory after a time.
+What it adds is that it can keep watching the directories (for some time), and rehash 
+- new files 
+- altered files (detected by changes in size and/or mtime) 
 
-The use case this was for is dealing sensibly with files being copied in during data collection, in that files come in over time, and some might be appended to.
+This was made for dealing sensibly with files being copied in during data collection, also considering that some files may be appended to after we first see them.
 
 Tries to avoid losing work with an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many bytes bytes (default 1GB), and a new hashfile is saved to a temporary file, then moved into place.
 
@@ -13,11 +15,12 @@ Tries to avoid losing work with an ill-placed Ctrl-C: We write to disk every-so-
 ### Limitations
                                                                                                                
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
-because the hashfile (our only information store between runs) doesn't contain these.
+because the hashfile (our only information store between runs) doesn't contain that information.
 
-There's a "re-hash files with mtime younger than X" argument (default 5min) to help there, 
-but it makes the assumption that older files never change, and that mtime means local age (e.g. not true in rsync).
-so you should be sure that makes sense for your use.
+There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help there, 
+but doing so makes the assumption that older files never change, and that mtime means local age (e.g. not necessarily true in rsync).
+so you should check and be sure that makes sense for your use.
+
 
 ### Arguments:
 
