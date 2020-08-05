@@ -2,7 +2,7 @@
 
 SHA1 hashfile maker for directories.
 
-What it adds is that it can keep watching the directories (for some time), and rehash 
+What it adds is that it can keep watching the directories (for some time), and rehash... 
 - new files 
 - altered files (detected by changes in size and/or mtime) 
 
