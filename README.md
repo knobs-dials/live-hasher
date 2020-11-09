@@ -2,9 +2,9 @@
 
 SHA1 hashfile maker for directories.
 
-What it adds is that it can keep watching the directories (for some time), and rehash... 
-- new files 
-- altered files (detected by changes in size and/or mtime) 
+What it adds over similar tools is that it can keep watching the directories (for some time), and... 
+- pick up new files 
+- rehash altered files (detected by changes in size and/or mtime)
 
 This was made for dealing sensibly with files being copied in during data collection, also considering that some files may be appended to after we first see them.
 
