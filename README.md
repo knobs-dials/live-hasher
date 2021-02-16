@@ -68,7 +68,7 @@ Options:
 ### Notes:
 * One thread per directory argument, which can help speed when they are on different mounts.
 
-* checker code is basically just equivalent to sha1sum -c / md5sum -c
+* checker code is basically just equivalent to sha1sum -c
 
 * prints/stores relative paths  (inside script state it's all absolute)
 
