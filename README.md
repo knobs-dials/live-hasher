@@ -6,9 +6,9 @@ What it adds over similar tools is that it can keep watching the directories (fo
 - pick up new files 
 - rehash altered files (detected by changes in size and/or mtime)
 
-This was made for dealing sensibly with files being copied in during data collection, also considering that some files may be appended to after we first see them.
+This was made for files being copied in during data collection, considering that some files may be appended to after we first see them, and deal sensibly with that.
 
-Tries to avoid losing work with an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many bytes bytes (default 1GB), and a new hashfile is saved to a temporary file, then moved into place.
+Tries to avoid losing work (in existing hash files) with an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many bytes bytes (default 1GB), and a new hashfile is saved to a temporary file, then moved into place.
 
 
 
@@ -17,9 +17,10 @@ Tries to avoid losing work with an ill-placed Ctrl-C: We write to disk every-so-
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
 because the hashfile (our only information store between runs) doesn't contain that information.
 
-There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help there, 
-but doing so makes the assumption that older files never change, and that mtime means local age (e.g. not necessarily true in rsync).
-so you should check and be sure that makes sense for your use.
+There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help, 
+but doing so makes the assumption that older files never change (may need to be longer in some uses),
+and that mtime means local age (e.g. not necessarily true in rsync).
+so think about all of this and adapt to your use.
 
 
 ### Arguments:
@@ -67,8 +68,8 @@ Options:
 ### Notes:
 * One thread per directory argument, which can help speed when they are on different mounts.
 
-* checker code is basically just equivalent to md5sum -c / sha1sum -c
+* checker code is basically just equivalent to sha1sum -c / md5sum -c
 
-* prints/stores relative paths  (internally it's absolute)
+* prints/stores relative paths  (inside script state it's all absolute)
 
-* First-ish version, not thoroughly tested, don't rely on it for your dog's / company's safety
+* First-ish version, not thoroughly tested, don't rely on it for your dog's or company's safety
