@@ -8,7 +8,7 @@ What it adds over similar tools is that it can keep watching the directories (fo
 
 This was made for files being copied in during data collection, considering that some files may be appended to after we first see them, and deal sensibly with that.
 
-Tries to avoid losing work (in existing hash files) with an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many bytes bytes (default 1GB), and a new hashfile is saved to a temporary file, then moved into place.
+Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, new hashfile is saved to a temporary file, then moved into place.
 
 
 
