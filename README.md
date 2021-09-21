@@ -1,19 +1,20 @@
 # live-hasher
 
-SHA1 hashfile maker for directories.
+SHA1 hash file maker for directories.
 
 What it adds over similar tools is that it can keep watching the directories (for some time), and... 
 - pick up new files 
 - rehash altered files (detected by changes in size and/or mtime)
 
-This was made for files being copied in during data collection, considering that some files may be appended to after we first see them, and deal sensibly with that.
+This was made to run on large datasets during collection, for efficiency because it'd be reading files while still in page cache,
+while also dealing with files may be altered after we first see them.
 
-Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C: We write to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, new hashfile is saved to a temporary file, then moved into place.
+Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, the new hash file is saved to a temporary file, then moved into place.
 
 
 
 ### Limitations
-                                                                                                               
+
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
 because the hashfile doesn't contain that information.
 
