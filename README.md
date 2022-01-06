@@ -6,8 +6,9 @@ What it adds over similar tools is that it can keep watching the directories (fo
 - pick up new files 
 - rehash altered files, detected by changes in size and/or mtime
 
-This was made to run on large datasets during collection, for efficiency because it'd be reading files while still in page cache,
-while also dealing with files may be altered after we first see them.
+This was made to run on large datasets during collection, dealing with files may be altered after we first see them,
+and also for efficiency in that it'd be reading files while in page cache (where applicable).
+
 
 Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, the new hash file is saved to a temporary file, then moved into place.
 
