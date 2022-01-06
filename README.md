@@ -4,7 +4,7 @@ SHA1 hash file maker for directories.
 
 What it adds over similar tools is that it can keep watching the directories (for some time), and... 
 - pick up new files 
-- rehash altered files (detected by changes in size and/or mtime)
+- rehash altered files, detected by changes in size and/or mtime
 
 This was made to run on large datasets during collection, for efficiency because it'd be reading files while still in page cache,
 while also dealing with files may be altered after we first see them.
