@@ -6,8 +6,8 @@ What it adds over similar tools is that it can keep watching the directories (fo
 - pick up new files 
 - rehash altered files, detected by changes in size and/or mtime
 
-This was made to run on large datasets during collection, dealing with files may be altered after we first see them,
-and also for efficiency in that it'd be reading files while in page cache (where applicable).
+This was made to run on terabyte datasets during collection, dealing with files may be altered after we first see them,
+and also for efficiency in that it's likely to read files while still in the page cache (where applicable).
 
 
 Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, the new hash file is saved to a temporary file, then moved into place.
@@ -17,7 +17,7 @@ Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, i
 ### Limitations
 
 The main caveat is that when you stop and re-run, it can't really do a size or mtime check,
-because the hashfile doesn't contain that information.
+because the hashfile doesn't contain that information. 
 
 There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help, 
 but doing so makes the assumption that older files never change (may need to be longer in some uses),
@@ -75,3 +75,6 @@ Options:
 * prints/stores relative paths  (inside script state it's all absolute)
 
 * First-ish version, not thoroughly tested, don't rely on it for your dog's or company's safety
+
+### TODO:
+* I'm considering adding a hidden file to be able to allow size/mtime checks between runs
