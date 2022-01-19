@@ -77,4 +77,4 @@ Options:
 * First-ish version, not thoroughly tested, don't rely on it for your dog's or company's safety
 
 ### TODO:
-* I'm considering adding a hidden file to be able to allow size/mtime checks between runs
+* considering adding a hidden file to be able to allow size/mtime checks between runs
