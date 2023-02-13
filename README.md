@@ -6,11 +6,11 @@ What it adds over similar tools is that it can keep watching the directories (fo
 - pick up new files 
 - rehash altered files, detected by changes in size and/or mtime
 
-This was made to run on terabyte datasets during collection, dealing with files may be altered after we first see them,
-and also for efficiency in that it's likely to read files while still in the page cache (where applicable).
+This was made to run on terabyte datasets during collection, dealing with files that may be altered after we first see them,
+and also for efficiency in that it's likely to read files while they are still in the page cache (...where applicable).
 
 
-Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB). Also, the new hash file is saved to a temporary file, then moved into place.
+Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB), whichever comes first.   Also, the new hash file is first saved to a temporary file, then moved into place.
 
 
 
@@ -20,7 +20,7 @@ The main caveat is that when you stop and re-run, it can't really do a size or m
 because the hashfile doesn't contain that information. 
 
 There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help, 
-but doing so makes the assumption that older files never change (may need to be longer in some uses),
+but doing so makes the assumption that older files never change (this may need to be longer in some uses),
 and that mtime means local age (e.g. not necessarily true in rsynced/otherwise copied data).
 ...so think about all of this and adapt to your use.
 
