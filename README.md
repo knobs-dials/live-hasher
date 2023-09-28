@@ -10,7 +10,7 @@ This was made to run on terabyte datasets _during_ data collection, dealing with
 and also for efficiency in that it's likely to read files while they are still in the page cache (...where applicable).
 
 
-Tries to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB), whichever comes first.   Also, the new hash file is first saved to a temporary file, then moved into place.
+Makes some attempts to avoid losing work (in existing hash files) from an ill-placed Ctrl-C, in that it writes to disk every-so-many files (default 500) and every-so-many read bytes (default 1GB), whichever comes first.   Also, the new hash file is first saved to a temporary file, then moved into place.
 
 
 
