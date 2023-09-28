@@ -6,7 +6,7 @@ What it adds over similar tools is that it can keep watching the directories (fo
 - pick up new files 
 - rehash altered files, detected by changes in size and/or mtime
 
-This was made to run on terabyte datasets during collection, dealing with files that may be altered after we first see them,
+This was made to run on terabyte datasets _during_ data collection, dealing with files that may be altered after we first see them,
 and also for efficiency in that it's likely to read files while they are still in the page cache (...where applicable).
 
 
