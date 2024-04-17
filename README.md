@@ -21,8 +21,9 @@ The main caveat is that when you stop and re-run, it can't really do a size or m
 because the hashfile doesn't contain that information. 
 
 There's a "re-hash files younger than X on disk" argument (default 5min, and based on mtime) to help, 
-but doing so makes the assumption that older files never change (this may need to be longer in some uses),
-and that mtime means local age (e.g. not necessarily true in rsynced/otherwise copied data).
+but doing so makes the assumption  
+- that older files never change (in some uses you may want this significantly longer),
+- that mtime means local age (e.g. not necessarily true in rsynced/otherwise copied data).
 ...so think about all of this and adapt to your use.
 
 
